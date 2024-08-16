@@ -1,0 +1,57 @@
+---
+
+---
+
+<script is:inline>
+  const localkey = `credentials`;
+
+  const readLocal = () => localStorage.getItem(localkey);
+  const writeLocal = (x) => localStorage.setItem(localkey, x);
+
+  document.addEventListener("alpine:init", () => {
+    Alpine.store("env", {});
+    Alpine.store("data", {});
+
+    Alpine.data("root", () => ({
+      expanded: false,
+      input: "",
+      init() {
+        const lcl = readLocal();
+        this.parseCreds(lcl);
+        this.input = lcl;
+      },
+      update(str) {
+        this.parseCreds(str);
+        writeLocal(str);
+      },
+      parseCreds(str) {
+        return str
+          .split("\n")
+          .map((x) => x.trim())
+          .map((line) => {
+            const [key, val] = line.split("=");
+            if (val && key) return [key, val];
+          })
+          .filter((x) => Boolean(x))
+          .map(([key, val]) => {
+            Alpine.store("env")[key] = val;
+          });
+      },
+    }));
+  });
+</script>
+<div x-data="root" class="root">
+  <div x-init="readLocal"></div>
+  <div>
+    <button @click="expanded=!expanded"> [ ] </button>
+    <span x-text="expanded"></span>
+    <template x-if="expanded===true">
+      <form @submit.prevent="update(input)">
+        <h2>Credentials</h2>
+        <textarea x-model="input" rows="5"></textarea>
+        <button type="submit">update</button>
+      </form>
+    </template>
+  </div>
+  <slot />
+</div>

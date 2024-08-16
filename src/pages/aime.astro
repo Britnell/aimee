@@ -1,0 +1,262 @@
+---
+
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro</title>
+    <script defer src="/alpine.js"></script>
+  </head>
+  <body>
+    <header>
+      <details>
+        <summary>
+          <span>AIME</span>
+        </summary>
+        <div x-data="{}">
+          <label>
+            <span>SECRET:</span>
+            <input
+              @input="(ev)=>{document.cookie = `${ev.target.value}; max-age=${60*60*24*1}; path=/` }"
+            />
+          </label>
+        </div>
+      </details>
+    </header>
+
+    <script is:inline>
+      document.addEventListener("alpine:init", () => {
+        // $STORE
+        Alpine.store("store", {});
+
+        Alpine.data("data", () => ({
+          calendar: [],
+          getCache(key) {
+            const str = localStorage.getItem(key);
+            try {
+              return JSON.parse(str);
+            } catch (e) {
+              return str;
+            }
+          },
+          setCache(key, val) {
+            const v = typeof val === "string" ? val : JSON.stringify(val);
+            localStorage.setItem(key, v);
+          },
+          async update() {
+            const d = await fetch("/api/calendar", {
+              method: "GET",
+            }).then((res) => res.json());
+            this.calendar = d;
+            Alpine.store("store").calendar = d;
+            this.setCache("calendar", d);
+          },
+          init() {
+            const cal = this.getCache("calendar");
+            if (cal) {
+              this.calendar = cal;
+              Alpine.store("store").calendar = cal;
+            }
+          },
+        }));
+      });
+    </script>
+
+    <section x-data="data">
+      <details>
+        <summary> calendar </summary>
+        <div>
+          <ul>
+            <template x-for="cal in calendar">
+              <li>
+                <span x-text="cal.name"> </span> -
+                <span x-text="cal.start"> </span>
+              </li>
+            </template>
+          </ul>
+          <button @click="update">update calendar</button>
+        </div>
+      </details>
+      <details>
+        <summary>Other</summary>
+        <div>
+          <p>asdasd</p>
+        </div>
+      </details>
+    </section>
+
+    <script is:inline>
+      const FUNCS = {
+        daily: `With the data provided, please give me a precise summary of my schedule today and tomorrow`,
+      };
+      function openDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open("cache", 1);
+
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve(request.result);
+
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore("blobs");
+          };
+        });
+      }
+      async function storeBlob(key, blob) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["blobs"], "readwrite");
+          const store = transaction.objectStore("blobs");
+          const request = store.put(blob, key);
+
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve();
+        });
+      }
+
+      async function getBlob(key) {
+        const db = await openDb();
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction(["blobs"], "readonly");
+          const store = transaction.objectStore("blobs");
+          const request = store.get(key);
+
+          request.onerror = () => reject(request.error);
+          request.onsuccess = () => resolve(request.result);
+        });
+      }
+
+      document.addEventListener("alpine:init", () => {
+        Alpine.data("aime", () => ({
+          func: "",
+          prompt: "",
+          answer: "",
+          audio: "",
+          datasource: {},
+          init() {
+            const last = localStorage.getItem("lastanswer");
+            this.answer = last;
+            getBlob("lastread").then((blob) => {
+              if (!blob) return;
+              const uri = window.URL.createObjectURL(blob);
+              this.audio = uri;
+            });
+          },
+          loadFunc(ev) {
+            const func = ev.target.value;
+            const preset = FUNCS[func];
+            if (!preset) return;
+            if (func === "daily") this.datasource = { calendar: true };
+
+            this.prompt = preset;
+          },
+          onType() {
+            this.func = "";
+          },
+          async getAnswer() {
+            const today = new Date();
+            const store = Alpine.store("store");
+            let data = "";
+            if (this.datasource.calendar)
+              data += `Here is data from my personal calendar :
+- some events  are to-dos i should do that day, these often include '>'
+- you only need to include starting time of events, ignore the ending time / duration
+- for all day events you don't need to mention they start at 0:00
+<calendar>\n${JSON.stringify(store.calendar)}\n</calendar>\n\n`;
+
+            let prompt = `Hey claude, you are now my personal assistant! you are helpful, precise, reliable and compassionate. Your replies are short and concise, as they will be read out aloud by another robot.
+
+${data}
+              
+==today is ${today.toUTCString()}==
+${this.prompt}
+              
+`;
+
+            const answ = await this.ask(prompt);
+            this.answer = answ;
+            localStorage.setItem("lastanswer", answ);
+          },
+          ask(text) {
+            return fetch("/api/claude", {
+              method: "POST",
+              body: text,
+            })
+              .then((res) => res.json())
+              .then((resp) => resp[0]?.text);
+          },
+          readit() {
+            fetch("/api/read", {
+              method: "POST",
+              body: this.answer,
+            })
+              .then((res) => res.blob())
+              .then((blob) => {
+                const uri = window.URL.createObjectURL(blob);
+                this.audio = uri;
+                storeBlob("lastread", blob);
+              });
+          },
+        }));
+      });
+    </script>
+    <section x-data="aime">
+      <div>
+        <label>Use data:</label>
+        <ul>
+          <li>
+            <label>
+              <input type="checkbox" x-model="datasource.calendar" />
+              Calendar
+            </label>
+          </li>
+          <li>
+            <label>
+              <input type="checkbox" x-model="datasource.other" />
+              other
+            </label>
+          </li>
+        </ul>
+        <div x-text="JSON.stringify(datasource)"></div>
+      </div>
+
+      <div>
+        <label for="">Funcs</label>
+        <select x-model="func" @input="loadFunc">
+          <option value=""></option>
+          <option value="daily">daily calendar</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Prompt:</label>
+        <div>
+          <textarea x-model="prompt" @input="onType"></textarea>
+        </div>
+        <div>
+          <button @click="getAnswer">Answer</button>
+        </div>
+      </div>
+
+      <div>
+        <h3>Answer</h3>
+        <p x-text="answer"></p>
+      </div>
+      <div>
+        <div>
+          <button @click="readit">READ IT</button>
+        </div>
+        <template x-if="audio">
+          <div>
+            <a :href="audio">audio</a>
+            <audio :src="audio" controls></audio>
+          </div>
+        </template>
+      </div>
+    </section>
+  </body>
+</html>

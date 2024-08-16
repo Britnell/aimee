@@ -1,0 +1,191 @@
+---
+import Root from "./root.astro";
+---
+
+<Root>
+  <!-- <div x-text="JSON.stringify($store.env)"></div> -->
+  <script is:inline>
+    const datakey = "data-cache";
+
+    document.addEventListener("alpine:init", () => {
+      Alpine.data("load", () => ({
+        data: {
+          calendar: {},
+          med: "",
+        },
+        startup() {
+          const cached = this.readCache();
+          console.log(cached);
+
+          if (cached?.calendar) this.data.calendar = cached.calendar;
+          else this.fetchCalendar();
+
+          if (cached?.med) this.data.med = cached.med;
+          else this.fetchMed();
+
+          if (cached?.summary) this.data.summary = cached.summary;
+          //   if (cached?.audio) this.data.audio = cached.audio;
+        },
+        readCache() {
+          try {
+            const lcl = localStorage.getItem(datakey);
+            return JSON.parse(lcl);
+          } catch (e) {
+            return null;
+          }
+        },
+        writecache() {
+          localStorage.setItem(datakey, JSON.stringify(this.data));
+        },
+        apiCall(url, data) {
+          const env = Alpine.store("env");
+          return fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ...env, ...data }),
+          });
+        },
+        fetchCalendar() {
+          this.apiCall("/api/calendar")
+            .then((res) => (res.ok ? res.json() : null))
+            .then((resp) => {
+              if (!resp) return;
+              this.data.calendar = resp;
+              this.writecache();
+            });
+        },
+        fetchMed() {
+          this.apiCall("/api/med")
+            .then((res) => res.text())
+            .then((res) => {
+              this.data.med = res;
+              this.writecache();
+            });
+        },
+        fetchSummary() {
+          const prompt = this.generatePrompt([
+            `Here is my personal calendar, this is the most important. some events  are to-dos i should do that day, these often include '>'. some things that happen that day are just entered as an all day event, in this case ignore the time.
+<calendar>${JSON.stringify(this.data.calendar)}</calendar>`,
+            `Here are events at Buddhist center, I would like to visit here and meditate more, so keep an eye on these. (these are in German but please continue in English):
+<aryatara>${this.data.med}</aryatara>`,
+          ]);
+
+          this.apiCall("/api/claude", { prompt })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((resp) => {
+              const msg = resp?.[0]?.text;
+              if (!msg) return;
+              this.data.summary = msg;
+              this.writecache();
+            });
+        },
+        plusXdays(days) {
+          const today = new Date();
+          today.setDate(today.getDate() + days);
+          return today;
+        },
+        generatePrompt(data) {
+          const today = new Date();
+          const tomorrow = this.plusXdays(1).toDateString();
+
+          return `Hey claude, you are now my personal assistant! you are helpful, precise, reliable and compassionate. Will you help me be more organised and productive about my day?
+
+You will receive data from my calendar as well as event lists I want to keep an eye on. I would like you to create a personal summary to start my day.
+
+${data.join("\n\n")}
+
+Bear in mind I work a normal 40 hr work week, Mo to Fr, usually from 9pm to 5:30pm
+
+==today is ${today.toUTCString()}==
+
+lets be precise and go step by step to not miss anything : 
+
+1. list all events (personal and external) that are happening today ${today.toDateString()}. make a note of importance, identify todos and other info about the day.
+2. list all events that are tomorrow ${tomorrow}, the same as above.
+3. do the same as for 1) and 2) for the rest of the week
+
+guidelines :
+- only mention start time, dont mention length or ending time
+- for all day events no need to mention the time 00:00 or that they are all day
+`;
+        },
+        getAudio() {
+          if (!this.data.summary) return;
+
+          this.fetchAudio(this.data.summary)
+            .then((res) => res.blob())
+            .then((blob) => {
+              const uri = window.URL.createObjectURL(blob);
+              this.data.audio = uri;
+              this.writecache();
+            });
+        },
+        fetchAudio(text) {
+          const env = Alpine.store("env");
+          return fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/VuJ05kimyrfnJmOxLh2k?optimize_streaming_latency=3&output_format=mp3_22050_32`,
+            {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "xi-api-key": env.ELEVENLABS_KEY,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                text,
+                model_id: "eleven_multilingual_v2",
+                voice_settings: {
+                  stability: 0.5,
+                  similarity_boost: 0.8,
+                  style: 0.0,
+                  use_speaker_boost: true,
+                },
+              }),
+            }
+          );
+        },
+      }));
+    });
+  </script>
+  <div x-data="load" x-init="startup">
+    <h1>App</h1>
+
+    <section>
+      <div>
+        <h4>Calendar</h4>
+        <button @click="fetchCalendar()">update</button>
+      </div>
+      <textarea :value="JSON.stringify(data.calendar)"></textarea>
+    </section>
+
+    <section>
+      <div>
+        <h4>Meditation</h4>
+        <button @click="fetchMed()">update</button>
+      </div>
+      <textarea :value="data.med"></textarea>
+    </section>
+
+    <summary>
+      <div>
+        <h4>summary</h4>
+        <button @click="fetchSummary">update</button>
+      </div>
+      <!-- <p x-text="data.summary" style="white-space:pre;"></p> -->
+    </summary>
+
+    <summary>
+      <div>
+        <h4>whisper</h4>
+        <button @click="getAudio">update</button>
+        <template x-if="data.audio">
+          <a :href="data.audio">audio</a>
+        </template>
+      </div>
+    </summary>
+
+    <p x-text="data.summary" style="white-space:pre;"></p>
+  </div>
+</Root>
