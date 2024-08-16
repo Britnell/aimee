@@ -2,6 +2,8 @@ import { google } from "googleapis";
 
 const CALENDAR_CLIENT_ID = import.meta.env.CALENDAR_CLIENT_ID;
 const CALENDAR_CLIENT_SECRET = import.meta.env.CALENDAR_CLIENT_SECRET;
+const CALENDAR_REDIRECT = import.meta.env.CALENDAR_REDIRECT;
+
 const CALENDAR_ACCESS = import.meta.env.CALENDAR_ACCESS;
 const CALENDAR_REFRESH = import.meta.env.CALENDAR_REFRESH;
 const CALENDAR_ID = import.meta.env.CALENDAR_ID;
@@ -10,7 +12,7 @@ export const fetchCalendar = async (daysbefore: number, daysafter: number) => {
   const oauth2Client = new google.auth.OAuth2(
     CALENDAR_CLIENT_ID,
     CALENDAR_CLIENT_SECRET,
-    "http://localhost:4321/aime/calendar/code"
+    CALENDAR_REDIRECT
   );
 
   oauth2Client.setCredentials({
