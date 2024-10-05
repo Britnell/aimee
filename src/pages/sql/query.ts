@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 // import { queryClaude } from "../../aime/claude";
 // import { checkAuth } from "../../lib";
-import { db, query, schema } from "../../data/db";
+import { db, query, schema } from "../../aime/db";
 
 export const prerender = false;
 

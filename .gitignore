@@ -1,3 +1,5 @@
+python/llm_env/
+
 .pnpm-lock.yaml
 .vscode/
 
