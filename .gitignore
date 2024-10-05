@@ -1,4 +1,7 @@
 python/llm_env/
+*.db
+
+#
 
 .pnpm-lock.yaml
 .vscode/
