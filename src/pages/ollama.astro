@@ -1,0 +1,51 @@
+---
+
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="/alpine.js" defer ></script>
+</head>
+<body>
+    <h1>Ollama</h1>
+    
+    <script is:inline> 
+        document.addEventListener("alpine:init", () => {
+            Alpine.data("chat", () => ({
+                query: '',
+                response: '',
+                async submit(ev){
+                    const formdata = new FormData(ev.target);
+                    const q = formdata.get('query')
+                    const resp = await fetch('http://localhost:11434/api/generate',{
+                        method: 'POST',
+                        headers:{
+                            // 'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            // model: 'deepseek-coder-v2:latest',
+                            // model: 'gemma2:27b',
+                            model: 'llama3.2:3b', 
+                            prompt: q,
+                            // suffix: 'please',
+                            stream: false,
+                        })
+                    }).then(res=>res.json())
+                    this.response = resp.response
+                }
+            }))
+        })
+    </script>
+    <div x-data="chat" @submit.prevent="submit">
+        <form>
+            <input type="text" name="query" placeholder="Enter your query..." />
+            <button>Go</button>
+        </form>
+        <p x-text="response"></p>
+    </div>
+</body>
+</html>
