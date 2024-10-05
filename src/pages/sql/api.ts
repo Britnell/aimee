@@ -28,13 +28,13 @@ export const POST: APIRoute = async ({ request }) => {
     const data = db.query(sql);
     console.log(" Data rows : ", data.length);
 
-    const promptTwo = `<Query>${sql}</Query>
+    const promptTwo = `
     <Data>${JSON.stringify(data)}</Data>
-
-    ## Now give only your final 'Reply' summary which will be read aloud to the user.`;
+    ## Now give only your final 'Reply' summary which will be read aloud to the user.
+    `;
     // console.log({ promptTwo });
-
-    const Qtwo = await queryOllama(promptTwo);
+    console.log("q2");
+    const Qtwo = await queryMlx(promptTwo);
     console.log({ Qtwo });
 
     return new Response(
