@@ -21,4 +21,13 @@ export const query = (sql: string) => {
   }
 };
 
+export const getSchema = () => {
+  const res = db
+    .prepare(`SELECT sql FROM sqlite_master WHERE type='table';`)
+    .all();
+  return res
+    .map((row: { sql: string }) => row.sql)
+    .filter((sql: string) => !sql.includes("sqlite_sequence"))
+    .join("\n");
+};
 // db.exec(schema);

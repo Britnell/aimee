@@ -29,10 +29,15 @@ VALUES
     VALUES ('2024-10-10', null, 'Birthday!', 'maybe meal / cinem? ')
     RETURNING *;`;
 
-    const del = `Delete from Event`;
+    //  `Delete from Event`;
+    // SELECT sql FROM sqlite_master WHERE type='table';
+    // ALTER TABLE Event DROP COLUMN description;
+    // ALTER TABLE Event ADD COLUMN value INTEGER CHECK(value IS NULL OR (value >= 1 AND value <= 10));
+    // ALTER TABLE Event ADD COLUMN type TEXT DEFAULT 'event' CHECK( type IN ('appointment','event','to-do','habit') );
+    // ALTER TABLE Event RENAME COLUMN tag TO type;
+    // ALTER TABLE Event ADD COLUMN habit TEXT CHECK( habit IN ('meditation', 'exercise') );
     const data = query(`
-      SELECT * FROM Event 
-    WHERE date = date('now') 
+      
     `);
     console.log({ data });
 

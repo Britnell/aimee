@@ -1,18 +1,15 @@
 import type { APIRoute } from "astro";
 import * as db from "../../aime/db";
 import {
-  generateSQLprompt,
-  generateSummaryPrompt,
+  generateAdminPrompt,
   getSqlQuery,
   pipe,
   queryCoder,
-  queryMlx,
 } from "../../aime/aime";
-import { queryClaude } from "../../aime/claude";
 
 export const prerender = false;
 
-const print = (x: any) => {
+const print = (x) => {
   console.log(x);
   return x;
 };
@@ -23,12 +20,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (!form.query) throw new Error(" no query");
     console.log(form.query);
 
-    const Qone = await pipe(
-      form.query,
-      generateSQLprompt,
-      // print,
-      queryCoder
-    );
+    const Qone = await pipe(form.query, generateAdminPrompt, queryCoder);
     const sql = getSqlQuery(Qone);
     if (!sql) {
       console.log({ Qone });
@@ -36,24 +28,13 @@ export const POST: APIRoute = async ({ request }) => {
     }
     console.log({ sql });
     const data = db.query(sql);
-    console.log(" Rows returned : ", data, data.length);
-
-    const Qtwo = await pipe(
-      {
-        query: form.query,
-        data: JSON.stringify(data),
-      },
-      generateSummaryPrompt,
-      queryMlx
-      // queryClaude
-    );
-    console.log("q2");
-    console.log({ Qtwo });
+    console.log(" Rows returned : ", data.length);
 
     return new Response(
       JSON.stringify({
         data,
-        reply: Qtwo,
+        sql,
+        reply: Qone,
       }),
       {
         status: 200,
