@@ -59,8 +59,8 @@ export const POST: APIRoute = async ({ request }) => {
       }
     );
   } catch (e) {
-    console.log(e);
-    return new Response(`{ error: ${e} }`, {
+    // console.log(e);
+    return new Response(JSON.stringify({ error: e.message }), {
       status: 200,
     });
   }

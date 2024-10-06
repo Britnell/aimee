@@ -47,6 +47,7 @@ export const getSqlQuery = (str: string) => {
 export const generateSQLprompt = (query: string) => {
   const date = new Date();
   const schema = db.getSchema();
+  // console.log(schema);
 
   return `
 You are an advanced SQL query generator for a calendar and habit tracking system using SQLite. You can generate queries to store and retrieve user data from the db.
@@ -59,7 +60,8 @@ Important SQL Guidelines:
 - LIMIT queries to 10 results unless specified otherwise
 - ORDER BY date ASC for chronological order
 
-## Here is an Example
+# Here are some Examples
+
 User: When do i have Tennis this week? 
 \`\`\`sql
 Select * from Event 
@@ -69,6 +71,15 @@ where date >= date('now')
   ORDER BY date DESC
   LIMIT 10 ;
 \`\`\`
+
+User: Yesterday my headache was 6
+\`\`\`sql
+Insert into Event (date, type, habit, value)
+Values ('2024-10-06','habit','headache',6)
+Returning *;
+\`\`\`
+
+# End of examples
 
 
 Current Information
@@ -107,7 +118,7 @@ Provide a brief, informative response suitable for text-to-speech output.`;
 
 export const generateAdminPrompt = (query: string) => {
   const schema = db.getSchema();
-  console.log(schema);
+  // console.log(schema);
 
   return `
 You are an advanced SQL query generator for a flexible calendar and habit tracking system using SQLite. You are the admin in charge of the application. If the user requests a new feature then you can implement this by modifying the sql Table schema.
