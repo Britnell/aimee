@@ -7,8 +7,8 @@ import {
   pipe,
   queryCoder,
   queryMlx,
+  queryOllama,
 } from "../../aime/aime";
-import { queryClaude } from "../../aime/claude";
 
 export const prerender = false;
 
@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ request }) => {
       form.query,
       generateSQLprompt,
       // print,
-      queryCoder
+      queryOllama("deepseek-coder-v2:latest")
     );
     const sql = getSqlQuery(Qone);
     if (!sql) {
@@ -36,7 +36,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
     console.log({ sql });
     const data = db.query(sql);
-    console.log(" Rows returned : ", data, data.length);
+    console.log(" Rows returned : ", data.length);
 
     const Qtwo = await pipe(
       {
@@ -44,8 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
         data: JSON.stringify(data),
       },
       generateSummaryPrompt,
-      queryMlx
-      // queryClaude
+      queryOllama("llama3.2:3b")
     );
     console.log("q2");
     console.log({ Qtwo });

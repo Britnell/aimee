@@ -15,7 +15,18 @@
         <h1>Ollama</h1>
         <a href="/admin">Admin</a>
     </header>
-    
+    <script>
+        let last_ping = 0;
+        const ping = async ()=>{
+            if (Date.now() - last_ping < 1 * 60 * 1000) return;
+            await fetch('/ping')
+            last_ping=Date.now()
+            console.log('ping ', last_ping);
+        }
+
+        document.addEventListener('DOMContentLoaded',ping)
+        document.addEventListener('visibilitychange',()=> (!document.hidden) && ping() )
+    </script>
     <script is:inline> 
         document.addEventListener("alpine:init", () => {
             Alpine.data("chat", () => ({

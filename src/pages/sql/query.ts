@@ -36,6 +36,7 @@ VALUES
     // ALTER TABLE Event ADD COLUMN type TEXT DEFAULT 'event' CHECK( type IN ('appointment','event','to-do','habit') );
     // ALTER TABLE Event RENAME COLUMN tag TO type;
     // ALTER TABLE Event ADD COLUMN habit TEXT CHECK( habit IN ('meditation', 'exercise') );
+    // ALTER TABLE Event ADD COLUMN value TEXT CHECK( value IS NULL OR  value IN ('done') OR  (CAST(value AS INTEGER) BETWEEN 1 AND 10)  );
     const data = query(`
       
     `);

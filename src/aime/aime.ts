@@ -7,26 +7,26 @@ export function pipe(initialValue: any, ...functions: FunctionType[]) {
 }
 
 export const queryCoder = (prompt: string) =>
-  queryOllama(prompt, "deepseek-coder-v2:latest");
+  queryOllama("deepseek-coder-v2:latest")(prompt);
 
-export const queryOllama = (
-  prompt: string,
-  model: "deepseek-coder-v2:latest" | "gemma2:27b" | "llama3.2:3b"
-) =>
-  fetch("http://localhost:11434/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      prompt,
-      stream: false,
-    }),
-  })
-    .then((res) => res.json())
-    .then((res) => res.response);
+export const queryOllama =
+  (model: "deepseek-coder-v2:latest" | "gemma2:27b" | "llama3.2:3b") =>
+  (prompt: string) =>
+    fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        prompt,
+        stream: false,
+        keep_alive: "1m",
+      }),
+    })
+      .then((res) => res.json())
+      .then((res) => res.response);
 
-export const queryMlx = (prompt: string) =>
-  fetch("http://localhost:8080/generate", {
+export const queryMlx = (path: string) => (prompt: string) =>
+  fetch("http://localhost:8080" + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt }),
@@ -47,8 +47,6 @@ export const getSqlQuery = (str: string) => {
 export const generateSQLprompt = (query: string) => {
   const date = new Date();
   const schema = db.getSchema();
-
-  console.log(schema);
 
   return `
 You are an advanced SQL query generator for a calendar and habit tracking system using SQLite. You can generate queries to store and retrieve user data from the db.
