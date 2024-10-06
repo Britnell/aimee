@@ -13,12 +13,12 @@ export const queryClaude = (prompt: string) =>
     body: JSON.stringify({
       //   model: "claude-3-5-sonnet-20240620",
       model: "claude-3-haiku-20240307",
-      max_tokens: 1024,
+      max_tokens: 512,
       messages: [{ role: "user", content: prompt }],
     }),
   })
     .then((res) => (res.ok ? res.json() : res.text()))
-    .then((res) => res.content);
+    .then((res) => res.content[0].text);
 
 export const generatePrompt = (data: string[]) => {
   const today = new Date();

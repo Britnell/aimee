@@ -30,7 +30,10 @@ VALUES
     RETURNING *;`;
 
     const del = `Delete from Event`;
-    const data = query(row);
+    const data = query(`
+      SELECT * FROM Event 
+    WHERE date = date('now') 
+    `);
     console.log({ data });
 
     return new Response("ok", {

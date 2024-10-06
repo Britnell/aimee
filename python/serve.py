@@ -4,7 +4,8 @@ import os
 
 app = Flask(__name__)
 
-repo = "mlx-community/Mistral-7B-Instruct-v0.3-4bit"
+# repo = "mlx-community/Mistral-7B-Instruct-v0.3-4bit"
+repo = "mlx-community/Meta-Llama-3-8B-Instruct-4bit"
 model, tokenizer = load(repo)
 
 @app.route('/generate', methods=['POST'])
